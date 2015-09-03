@@ -296,6 +296,18 @@ class CPTP_Module_Rewrite extends CPTP_Module {
 	 */
 	public function parse_request( $obj ) {
 		$taxes = CPTP_Util::get_taxonomies();
+		foreach ($this->taxonomy_args as $item) {
+			if (array_key_exists($item[0], $obj->query_vars)) {
+				global $wpdb;
+				$page_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT $wpdb->posts.ID FROM $wpdb->posts JOIN $wpdb->term_relationships ON $wpdb->posts.ID=$wpdb->term_relationships.object_id  JOIN $wpdb->terms ON $wpdb->term_relationships.term_taxonomy_id=$wpdb->terms.term_id WHERE $wpdb->terms.slug = %s AND $wpdb->posts.post_name=%s",
+						$obj->query_vars[$item[0]],
+						$obj->query_vars['name'])
+				);
+				$obj->query_vars['page_id'] = $page_id;
+			}
+		}
 		foreach ( $taxes as $key => $tax ) {
 			if ( isset( $obj->query_vars[ $tax ] ) ) {
 				if ( false !== strpos( $obj->query_vars[ $tax ], '/' ) ) {
