@@ -18,23 +18,23 @@ class CPTP_Module_Rewrite extends CPTP_Module {
 	private $taxonomy_args;
 
 	public function add_hook() {
-		add_action( 'parse_request', array( $this, 'parse_request' ) );
+		add_action( 'parse_request', [ $this, 'parse_request' ] );
 
-		add_action( 'registered_post_type', array( $this, 'registered_post_type' ), 10, 2 );
-		add_action( 'registered_taxonomy', array( $this, 'registered_taxonomy' ), 10, 3 );
+		add_action( 'registered_post_type', [ $this, 'registered_post_type' ], 10, 2 );
+		add_action( 'registered_taxonomy', [ $this, 'registered_taxonomy' ], 10, 3 );
 
-		add_action( 'wp_loaded', array( $this, 'add_rewrite_rules' ), 100 );
+		add_action( 'wp_loaded', [ $this, 'add_rewrite_rules' ], 100 );
 	}
 
 
 	public function add_rewrite_rules() {
 
 		foreach ( $this->taxonomy_args as $args ) {
-			call_user_func_array( array( $this, 'register_taxonomy_rules' ), $args );
+			call_user_func_array( [ $this, 'register_taxonomy_rules' ], $args );
 		}
 
 		foreach ( $this->post_type_args as $args ) {
-			call_user_func_array( array( $this, 'register_post_type_rules' ), $args );
+			call_user_func_array( [ $this, 'register_post_type_rules' ], $args );
 		}
 
 	}
@@ -105,7 +105,7 @@ class CPTP_Module_Rewrite extends CPTP_Module {
 
 		$rewrite_args = $args->rewrite;
 		if ( ! is_array( $rewrite_args ) ) {
-			$rewrite_args = array( 'with_front' => $args->rewrite );
+			$rewrite_args = [ 'with_front' => $args->rewrite ];
 		}
 
 		$slug = $args->rewrite['slug'];
@@ -210,54 +210,54 @@ class CPTP_Module_Rewrite extends CPTP_Module {
 				$taxonomy_key = $taxonomy;
 			}
 
-			$rules = array(
+			$rules = [
 				//feed.
-				array(
+				[
 					"regex"    => "%s/(.+?)/feed/(feed|rdf|rss|rss2|atom)/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&feed=\$matches[2]"
-				),
-				array(
+				],
+				[
 					"regex"    => "%s/(.+?)/(feed|rdf|rss|rss2|atom)/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&feed=\$matches[2]"
-				),
+				],
 				//year
-				array(
+				[
 					"regex"    => "%s/(.+?)/date/([0-9]{4})/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&year=\$matches[2]"
-				),
-				array(
+				],
+				[
 					"regex"    => "%s/(.+?)/date/([0-9]{4})/page/?([0-9]{1,})/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&year=\$matches[2]&paged=\$matches[3]"
-				),
+				],
 				//monthnum
-				array(
+				[
 					"regex"    => "%s/(.+?)/date/([0-9]{4})/([0-9]{1,2})/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&year=\$matches[2]&monthnum=\$matches[3]"
-				),
-				array(
+				],
+				[
 					"regex"    => "%s/(.+?)/date/([0-9]{4})/([0-9]{1,2})/page/?([0-9]{1,})/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&year=\$matches[2]&monthnum=\$matches[3]&paged=\$matches[4]"
-				),
+				],
 				//day
-				array(
+				[
 					"regex"    => "%s/(.+?)/date/([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&year=\$matches[2]&monthnum=\$matches[3]&day=\$matches[4]"
-				),
-				array(
+				],
+				[
 					"regex"    => "%s/(.+?)/date/([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/page/?([0-9]{1,})/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&year=\$matches[2]&monthnum=\$matches[3]&day=\$matches[4]&paged=\$matches[5]"
-				),
+				],
 				//paging
-				array(
+				[
 					"regex"    => "%s/(.+?)/page/?([0-9]{1,})/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]&paged=\$matches[2]"
-				),
+				],
 				//tax archive.
-				array(
+				[
 					"regex" => "%s/(.+?)/?$",
 					"redirect" => "index.php?{$taxonomy_key}=\$matches[1]"
-				),
-			);
+				],
+			];
 
 			//no post_type slug.
 			foreach ( $rules as $rule ) {
@@ -296,16 +296,19 @@ class CPTP_Module_Rewrite extends CPTP_Module {
 	 */
 	public function parse_request( $obj ) {
 		$taxes = CPTP_Util::get_taxonomies();
-		foreach ($this->taxonomy_args as $item) {
-			if (array_key_exists($item[0], $obj->query_vars)) {
-				global $wpdb;
-				$page_id = $wpdb->get_var(
-					$wpdb->prepare(
-						"SELECT $wpdb->posts.ID FROM $wpdb->posts JOIN $wpdb->term_relationships ON $wpdb->posts.ID=$wpdb->term_relationships.object_id  JOIN $wpdb->terms ON $wpdb->term_relationships.term_taxonomy_id=$wpdb->terms.term_id WHERE $wpdb->terms.slug = %s AND $wpdb->posts.post_name=%s",
-						$obj->query_vars[$item[0]],
-						$obj->query_vars['name'])
-				);
-				$obj->query_vars['page_id'] = $page_id;
+		if (array_key_exists('name', $obj->query_vars)) {
+			foreach ($this->taxonomy_args as $item) {
+				if (array_key_exists($item[0], $obj->query_vars ) ) {
+					global $wpdb;
+					$page_id                    = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT $wpdb->posts.ID FROM $wpdb->posts JOIN $wpdb->term_relationships ON $wpdb->posts.ID=$wpdb->term_relationships.object_id  JOIN $wpdb->terms ON $wpdb->term_relationships.term_taxonomy_id=$wpdb->terms.term_id WHERE $wpdb->terms.slug = %s AND $wpdb->posts.post_name=%s AND $wpdb->posts.post_status=%s",
+							$obj->query_vars[ $item[0] ],
+							urldecode($obj->query_vars['name']),
+							'publish' )
+					);
+					$obj->query_vars['page_id'] = $page_id;
+				}
 			}
 		}
 		foreach ( $taxes as $key => $tax ) {
