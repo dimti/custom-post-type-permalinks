@@ -304,7 +304,7 @@ class CPTP_Module_Rewrite extends CPTP_Module {
 						$wpdb->prepare(
 							"SELECT $wpdb->posts.ID FROM $wpdb->posts JOIN $wpdb->term_relationships ON $wpdb->posts.ID=$wpdb->term_relationships.object_id  JOIN $wpdb->terms ON $wpdb->term_relationships.term_taxonomy_id=$wpdb->terms.term_id WHERE $wpdb->terms.slug = %s AND $wpdb->posts.post_name=%s AND $wpdb->posts.post_status=%s",
 							$obj->query_vars[ $item[0] ],
-							urldecode($obj->query_vars['name']),
+							htmlspecialchars(stripslashes(urldecode($obj->query_vars['name']))),
 							'publish' )
 					);
 					$obj->query_vars['page_id'] = $page_id;
