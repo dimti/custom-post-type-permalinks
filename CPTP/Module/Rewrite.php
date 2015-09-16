@@ -295,11 +295,15 @@ class CPTP_Module_Rewrite extends CPTP_Module {
 	 * @param WP $obj
 	 */
 	public function parse_request( $obj ) {
+		global $wpdb;
+
 		$taxes = CPTP_Util::get_taxonomies();
+
 		if (array_key_exists('name', $obj->query_vars)) {
+			$is_taxonomy_found = false;
+
 			foreach ($this->taxonomy_args as $item) {
 				if (array_key_exists($item[0], $obj->query_vars ) ) {
-					global $wpdb;
 					$page_id                    = $wpdb->get_var(
 						$wpdb->prepare(
 							"SELECT $wpdb->posts.ID FROM $wpdb->posts JOIN $wpdb->term_relationships ON $wpdb->posts.ID=$wpdb->term_relationships.object_id  JOIN $wpdb->terms ON $wpdb->term_relationships.term_taxonomy_id=$wpdb->terms.term_id WHERE $wpdb->terms.slug = %s AND $wpdb->posts.post_name=%s AND $wpdb->posts.post_status=%s",
@@ -307,8 +311,23 @@ class CPTP_Module_Rewrite extends CPTP_Module {
 							htmlspecialchars(stripslashes(urldecode($obj->query_vars['name']))),
 							'publish' )
 					);
+
 					$obj->query_vars['page_id'] = $page_id;
+
+					$is_taxonomy_found = true;
 				}
+			}
+
+			if ( !$is_taxonomy_found ) {
+				$page_id                    = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT $wpdb->posts.ID FROM $wpdb->posts"
+						. " WHERE $wpdb->posts.post_name=%s AND $wpdb->posts.post_status=%s",
+						htmlspecialchars(stripslashes(urldecode($obj->query_vars['name']))),
+						'publish' )
+				);
+
+				$obj->query_vars['page_id'] = $page_id;
 			}
 		}
 		foreach ( $taxes as $key => $tax ) {
